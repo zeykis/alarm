@@ -1,0 +1,8 @@
+<resources>
+    <style name="Theme.WakeAlarm" parent="Theme.AppCompat.DayNight.NoActionBar" />
+
+    <!-- Alarm screen: must show over the lock screen and turn the screen on -->
+    <style name="Theme.WakeAlarm.Alarm" parent="Theme.AppCompat.NoActionBar">
+        <item name="android:windowBackground">@android:color/holo_red_dark</item>
+    </style>
+</resources>

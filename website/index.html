@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Wake Up</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --card: #171a23;
+    --accent: #ff4d5e;
+    --accent-dim: #7a2530;
+    --text: #f2f2f5;
+    --muted: #8b8f9c;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: var(--text);
+  }
+  .card {
+    background: var(--card);
+    border-radius: 24px;
+    padding: 40px 32px;
+    width: 90%;
+    max-width: 360px;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+  }
+  h1 { font-size: 1.3rem; margin: 0 0 4px; }
+  p.sub { color: var(--muted); margin: 0 0 32px; font-size: 0.9rem; }
+  button {
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    border: none;
+    background: radial-gradient(circle at 30% 30%, #ff6b78, var(--accent));
+    color: white;
+    font-size: 1.1rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    box-shadow: 0 10px 30px rgba(255,77,94,0.4);
+    transition: transform 0.1s ease;
+  }
+  button:active { transform: scale(0.96); }
+  button:disabled {
+    background: var(--accent-dim);
+    box-shadow: none;
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
+  .status {
+    margin-top: 24px;
+    font-size: 0.9rem;
+    color: var(--muted);
+    min-height: 20px;
+  }
+  .status.error { color: var(--accent); }
+  .status.ok { color: #6ee7a0; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>Wake them up</h1>
+    <p class="sub">Presses this every 5 minutes at most</p>
+    <button id="btn" onclick="trigger()">WAKE UP</button>
+    <div id="status" class="status">checking...</div>
+  </div>
+
+<script>
+  // Set this to wherever you deploy the backend, e.g. "https://your-app.onrender.com"
+  const SERVER_URL = "http://localhost:3000";
+
+  const btn = document.getElementById("btn");
+  const statusEl = document.getElementById("status");
+  let countdownTimer = null;
+
+  async function refreshStatus() {
+    try {
+      const res = await fetch(`${SERVER_URL}/status`);
+      const data = await res.json();
+
+      if (!data.phoneConnected) {
+        setStatus("Phone not connected", "error");
+        btn.disabled = true;
+        return;
+      }
+
+      if (data.remainingSeconds > 0) {
+        startCountdown(data.remainingSeconds);
+      } else {
+        btn.disabled = false;
+        setStatus("Ready", "ok");
+      }
+    } catch (e) {
+      setStatus("Can't reach server", "error");
+      btn.disabled = true;
+    }
+  }
+
+  function startCountdown(seconds) {
+    btn.disabled = true;
+    clearInterval(countdownTimer);
+    let remaining = seconds;
+    const tick = () => {
+      if (remaining <= 0) {
+        clearInterval(countdownTimer);
+        btn.disabled = false;
+        setStatus("Ready", "ok");
+        return;
+      }
+      const m = Math.floor(remaining / 60);
+      const s = remaining % 60;
+      setStatus(`Cooldown: ${m}:${s.toString().padStart(2, "0")}`, "");
+      remaining--;
+    };
+    tick();
+    countdownTimer = setInterval(tick, 1000);
+  }
+
+  function setStatus(text, cls) {
+    statusEl.textContent = text;
+    statusEl.className = "status " + (cls || "");
+  }
+
+  async function trigger() {
+    btn.disabled = true;
+    setStatus("Sending...", "");
+    try {
+      const res = await fetch(`${SERVER_URL}/trigger`, { method: "POST" });
+      const data = await res.json();
+
+      if (res.ok) {
+        setStatus("Sent!", "ok");
+        setTimeout(refreshStatus, 500);
+      } else if (data.error === "cooldown") {
+        startCountdown(data.remainingSeconds);
+      } else {
+        setStatus(data.error || "Failed", "error");
+        setTimeout(refreshStatus, 2000);
+      }
+    } catch (e) {
+      setStatus("Can't reach server", "error");
+      setTimeout(refreshStatus, 2000);
+    }
+  }
+
+  refreshStatus();
+  setInterval(refreshStatus, 15000);
+</script>
+</body>
+</html>

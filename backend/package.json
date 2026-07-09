@@ -1,0 +1,13 @@
+{
+  "name": "wake-alarm-backend",
+  "version": "1.0.0",
+  "description": "Direct WebSocket relay: website button -> server -> phone alarm. No third-party push service.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "ws": "^8.17.0"
+  }
+}
