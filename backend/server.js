@@ -13,7 +13,7 @@ const fs = require("fs");
 const { WebSocketServer } = require("ws");
 
 const PORT = process.env.PORT || 3000;
-const COOLDOWN_MS = 10 * 1000; // 5 minutes
+const COOLDOWN_MS = 5 * 60 * 1000; // 5 minutes
 const STATE_FILE = path.join(__dirname, "state.json");
 
 function loadState() {
@@ -25,7 +25,42 @@ function saveState(state) {
 }
 
 const app = express();
+app.set("trust proxy", true); // needed on Render so req.ip is the real caller, not Render's internal proxy
 app.use(express.json());
+
+// --- Visit logging ---
+const VISITS_FILE = path.join(__dirname, "visits.json");
+
+function logVisit(req) {
+  const entry = {
+    ip: req.ip,
+    path: req.path,
+    userAgent: req.headers["user-agent"] || "",
+    time: new Date().toISOString(),
+  };
+  console.log(`Visit: ${entry.ip} ${entry.path} at ${entry.time}`);
+
+  const visits = fs.existsSync(VISITS_FILE)
+    ? JSON.parse(fs.readFileSync(VISITS_FILE, "utf8"))
+    : [];
+  visits.push(entry);
+  // Keep the file from growing forever — last 500 visits is plenty.
+  fs.writeFileSync(VISITS_FILE, JSON.stringify(visits.slice(-500), null, 2));
+}
+
+app.use((req, res, next) => {
+  if (req.method === "GET") logVisit(req);
+  next();
+});
+
+// View logged visits any time at GET /visits
+app.get("/visits", (req, res) => {
+  const visits = fs.existsSync(VISITS_FILE)
+    ? JSON.parse(fs.readFileSync(VISITS_FILE, "utf8"))
+    : [];
+  res.json(visits.reverse()); // most recent first
+});
+
 app.use(express.static(path.join(__dirname, "..", "website")));
 
 // Allow the website to be hosted elsewhere too, if you want.
@@ -70,6 +105,8 @@ setInterval(() => {
 
 // The website button calls this.
 app.post("/trigger", (req, res) => {
+  console.log(`Trigger request from ${req.ip} at ${new Date().toISOString()}`);
+
   if (!phoneSocket || phoneSocket.readyState !== phoneSocket.OPEN) {
     return res.status(503).json({ error: "Phone is not connected right now" });
   }
