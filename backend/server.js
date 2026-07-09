@@ -13,7 +13,7 @@ const fs = require("fs");
 const { WebSocketServer } = require("ws");
 
 const PORT = process.env.PORT || 3000;
-const COOLDOWN_MS = 5 * 60 * 1000; // 5 minutes
+const COOLDOWN_MS =  60 * 1000; // 5 minutes
 const STATE_FILE = path.join(__dirname, "state.json");
 
 function loadState() {
