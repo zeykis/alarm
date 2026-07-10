@@ -38,7 +38,7 @@ function logVisit(req) {
     userAgent: req.headers["user-agent"] || "",
     time: new Date().toISOString(),
   };
-  console.log(`Visit: ${entry.ip} ${entry.path} at ${entry.time}`);
+  // console.log(`Visit: ${entry.ip} ${entry.path} at ${entry.time}`);
 
   const visits = fs.existsSync(VISITS_FILE)
     ? JSON.parse(fs.readFileSync(VISITS_FILE, "utf8"))
