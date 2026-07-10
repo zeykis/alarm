@@ -43,9 +43,9 @@ function logVisit(req) {
   const visits = fs.existsSync(VISITS_FILE)
     ? JSON.parse(fs.readFileSync(VISITS_FILE, "utf8"))
     : [];
-  visits.push(entry);
+  // visits.push(entry);
   // Keep the file from growing forever — last 500 visits is plenty.
-  fs.writeFileSync(VISITS_FILE, JSON.stringify(visits.slice(-500), null, 2));
+  // fs.writeFileSync(VISITS_FILE, JSON.stringify(visits.slice(-500), null, 2));
 }
 
 app.use((req, res, next) => {
